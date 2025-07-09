@@ -14,6 +14,8 @@ import { GraduationCap, User, Mail, Lock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function SignupPage() {
+
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -34,34 +36,39 @@ export default function SignupPage() {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate signup logic
-    setTimeout(() => {
-      if (formData.name && formData.email && formData.password && formData.role) {
-        localStorage.setItem("userRole", formData.role)
-        localStorage.setItem("userEmail", formData.email)
-        localStorage.setItem("userName", formData.name)
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
 
-        if (formData.role === "student") {
-          localStorage.setItem("userBranch", formData.branch)
-          localStorage.setItem("userYear", formData.year)
-        }
+      const data = await res.json()
 
+      if (res.ok) {
         toast({
           title: "Account created successfully",
-          description: "Welcome to College Assignment Portal!",
+          description: data.message,
         })
-
         router.push(`/${formData.role}/dashboard`)
       } else {
         toast({
           title: "Signup failed",
-          description: "Please fill in all required fields",
+          description: data.message,
           variant: "destructive",
         })
       }
-      setIsLoading(false)
-    }, 1000)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Something went wrong. Try again.",
+        variant: "destructive",
+      })
+    }
+
+    setIsLoading(false)
   }
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">

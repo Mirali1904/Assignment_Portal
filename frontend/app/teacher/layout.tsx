@@ -1,21 +1,25 @@
 "use client"
 
-import type React from "react"
-
+import { ReactNode } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 
-export default function TeacherLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+type TeacherLayoutProps = {
+  children: ReactNode
+}
+
+export default function TeacherLayout({ children }: TeacherLayoutProps) {
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Sidebar for teacher role */}
       <Sidebar role="teacher" />
-      <div className="flex-1 flex flex-col overflow-hidden">
+
+      {/* Main content layout */}
+      <div className="flex flex-1 flex-col overflow-hidden">
         <Header title="Teacher Dashboard" />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="flex-1 overflow-auto p-6">
+          {children}
+        </main>
       </div>
     </div>
   )

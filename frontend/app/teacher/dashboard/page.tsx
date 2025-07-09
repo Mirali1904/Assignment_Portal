@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, FileText, Users, Clock, CheckCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
 
 // Mock data
 const mockAssignments = [
@@ -68,44 +69,60 @@ export default function TeacherDashboard() {
   const { toast } = useToast()
 
   useEffect(() => {
-    setUserName(localStorage.getItem("userName") || "Teacher")
-  }, [])
+    setUserName(localStorage.getItem("userName") || "Teacher");
+
+    const fetchAssignments = async () => {
+      const res = await fetch("http://localhost:5000/api/assignments");
+      const data = await res.json();
+      setAssignments(data);
+    };
+
+    fetchAssignments();
+  }, []);
+
 
   const branches = ["Computer Science", "Information Technology", "Electronics", "Mechanical", "Civil", "Electrical"]
 
   const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
 
-  const handleCreateAssignment = () => {
-    if (
-      newAssignment.title &&
-      newAssignment.description &&
-      newAssignment.deadline &&
-      newAssignment.branch &&
-      newAssignment.year
-    ) {
-      const assignment = {
-        id: assignments.length + 1,
-        ...newAssignment,
-        submissions: 0,
-        totalStudents: Math.floor(Math.random() * 20) + 20, // Mock total students
+  const handleCreateAssignment = async () => {
+    const { title, description, deadline, branch, year } = newAssignment;
+
+    if (!title || !description || !deadline || !branch || !year) return;
+
+    try {
+      const res = await fetch("http://localhost:5000/api/assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newAssignment),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setAssignments([...assignments, data.assignment]);
+        toast({
+          title: "Assignment created",
+          description: "Your assignment has been posted successfully.",
+        });
+        setNewAssignment({ title: "", description: "", deadline: "", branch: "", year: "" });
+        setIsCreateDialogOpen(false);
+      } else {
+        toast({
+          title: "Error",
+          description: data.message,
+          variant: "destructive",
+        });
       }
-
-      setAssignments([...assignments, assignment])
-      setNewAssignment({
-        title: "",
-        description: "",
-        deadline: "",
-        branch: "",
-        year: "",
-      })
-      setIsCreateDialogOpen(false)
-
+    } catch (err) {
       toast({
-        title: "Assignment created",
-        description: "Your assignment has been posted successfully.",
-      })
+        title: "Error",
+        description: "Server error. Please try again later.",
+        variant: "destructive",
+      });
     }
-  }
+  };
+
 
   const totalAssignments = assignments.length
   const totalSubmissions = assignments.reduce((sum, a) => sum + a.submissions, 0)
@@ -277,9 +294,11 @@ export default function TeacherDashboard() {
                     </div>
                     <div className="text-xs text-gray-500">Submissions</div>
                   </div>
-                  <Button variant="outline" size="sm">
-                    View Submissions
-                  </Button>
+                  <Link href="/teacher/submissions">
+                    <Button variant="outline" size="sm">
+                      View Submissions
+                    </Button>
+                  </Link>
                 </div>
               </div>
             ))}

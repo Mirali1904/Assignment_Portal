@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,71 +19,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Eye, Bot, Download } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-// Mock data
-const mockAssignments = [
-  {
-    id: 1,
-    title: "Data Structures Assignment",
-    submissions: [
-      {
-        id: 1,
-        studentName: "John Doe",
-        studentId: "CS2021001",
-        submittedAt: "2024-01-14T10:30:00Z",
-        status: "pending",
-        grade: null,
-        feedback: "",
-      },
-      {
-        id: 2,
-        studentName: "Jane Smith",
-        studentId: "CS2021002",
-        submittedAt: "2024-01-13T15:45:00Z",
-        status: "graded",
-        grade: 8.5,
-        feedback: "Good implementation of BST operations. Consider optimizing the deletion method.",
-      },
-      {
-        id: 3,
-        studentName: "Mike Johnson",
-        studentId: "CS2021003",
-        submittedAt: "2024-01-15T09:20:00Z",
-        status: "pending",
-        grade: null,
-        feedback: "",
-      },
-    ],
-  },
-  {
-    id: 2,
-    title: "Web Development Project",
-    submissions: [
-      {
-        id: 4,
-        studentName: "Sarah Wilson",
-        studentId: "IT2021001",
-        submittedAt: "2024-01-19T14:30:00Z",
-        status: "pending",
-        grade: null,
-        feedback: "",
-      },
-      {
-        id: 5,
-        studentName: "David Brown",
-        studentId: "IT2021002",
-        submittedAt: "2024-01-18T11:15:00Z",
-        status: "graded",
-        grade: 9.0,
-        feedback: "Excellent responsive design and clean code structure.",
-      },
-    ],
-  },
-]
+// ✅ TYPES
+type Submission = {
+  id: number
+  studentName: string
+  studentId: string
+  submittedAt: string
+  status: "pending" | "graded"
+  grade: number | null
+  feedback: string
+}
+
+type Assignment = {
+  id: number
+  title: string
+  submissions: Submission[]
+}
 
 export default function TeacherSubmissions() {
-  const [assignments] = useState(mockAssignments)
-  const [selectedAssignment, setSelectedAssignment] = useState(mockAssignments[0])
-  const [selectedSubmission, setSelectedSubmission] = useState<any>(null)
+  const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null)
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
   const [isGradeDialogOpen, setIsGradeDialogOpen] = useState(false)
   const [grade, setGrade] = useState("")
   const [feedback, setFeedback] = useState("")
@@ -91,38 +47,76 @@ export default function TeacherSubmissions() {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false)
   const { toast } = useToast()
 
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleDateString() + " " + new Date(timestamp).toLocaleTimeString()
-  }
-
-  const handleGradeSubmission = () => {
-    if (selectedSubmission && grade && feedback) {
-      toast({
-        title: "Submission graded",
-        description: `Grade ${grade}/10 assigned to ${selectedSubmission.studentName}`,
+  useEffect(() => {
+    fetch("http://localhost:5000/api/assignments")
+      .then((res) => res.json())
+      .then((data: Assignment[]) => {
+        setAssignments(data)
+        setSelectedAssignment(data[0] || null)
       })
-      setIsGradeDialogOpen(false)
-      setGrade("")
-      setFeedback("")
-      setSelectedSubmission(null)
+      .catch((err) => console.error("Error fetching assignments:", err))
+  }, [])
+
+  const formatTimestamp = (timestamp: string) =>
+    new Date(timestamp).toLocaleDateString() + " " + new Date(timestamp).toLocaleTimeString()
+
+  const handleGradeSubmission = async () => {
+    if (selectedSubmission && grade && feedback) {
+      try {
+        const res = await fetch(`http://localhost:5000/api/submissions/${selectedSubmission.id}/grade`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ grade: parseFloat(grade), feedback }),
+        })
+
+        if (!res.ok) throw new Error("Failed to grade submission")
+
+        toast({
+          title: "Submission graded",
+          description: `Grade ${grade}/10 assigned to ${selectedSubmission.studentName}`,
+        })
+
+        const updatedAssignments: Assignment[] = await fetch("http://localhost:5000/api/assignments").then((res) =>
+          res.json()
+        )
+        setAssignments(updatedAssignments)
+
+        if (selectedAssignment) {
+          const updated = updatedAssignments.find((a) => a.id === selectedAssignment.id) || null
+          setSelectedAssignment(updated)
+        }
+
+        setIsGradeDialogOpen(false)
+        setGrade("")
+        setFeedback("")
+        setSelectedSubmission(null)
+      } catch (err: unknown) {
+        toast({
+          title: "Error grading submission",
+          description: err instanceof Error ? err.message : "Something went wrong.",
+          variant: "destructive",
+        })
+      }
     }
   }
 
-  const handleAiAnalysis = async (submission: any) => {
+  const handleAiAnalysis = async (submission: Submission) => {
     setIsAiAnalyzing(true)
     setAiAnalysis(null)
 
-    // Simulate AI analysis
     setTimeout(() => {
-      const aiProbability = Math.floor(Math.random() * 30) + 10 // Random percentage between 10-40%
+      const aiProbability = Math.floor(Math.random() * 30) + 10
       setAiAnalysis(
-        `AI Detection Analysis: ${aiProbability}% probability of AI-generated content. The submission shows ${aiProbability < 20 ? "minimal" : aiProbability < 30 ? "moderate" : "significant"} signs of AI assistance.`,
+        `AI Detection Analysis: ${aiProbability}% probability of AI-generated content. The submission shows ${aiProbability < 20 ? "minimal" : aiProbability < 30 ? "moderate" : "significant"
+        } signs of AI assistance.`
       )
       setIsAiAnalyzing(false)
     }, 2000)
   }
 
-  const openGradeDialog = (submission: any) => {
+  const openGradeDialog = (submission: Submission) => {
     setSelectedSubmission(submission)
     setGrade(submission.grade?.toString() || "")
     setFeedback(submission.feedback || "")
@@ -131,18 +125,16 @@ export default function TeacherSubmissions() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Student Submissions</h1>
         <p className="text-gray-600">Review and grade student assignment submissions</p>
       </div>
 
-      {/* Assignment Selector */}
       <div className="flex gap-4 overflow-x-auto pb-2">
         {assignments.map((assignment) => (
           <Button
             key={assignment.id}
-            variant={selectedAssignment.id === assignment.id ? "default" : "outline"}
+            variant={selectedAssignment?.id === assignment.id ? "default" : "outline"}
             onClick={() => setSelectedAssignment(assignment)}
             className="whitespace-nowrap"
           >
@@ -154,76 +146,85 @@ export default function TeacherSubmissions() {
         ))}
       </div>
 
-      {/* Submissions Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{selectedAssignment.title} - Submissions</CardTitle>
-          <CardDescription>Review and grade submissions for this assignment</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Student ID</TableHead>
-                <TableHead>Submitted At</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Grade</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {selectedAssignment.submissions.map((submission) => (
-                <TableRow key={submission.id}>
-                  <TableCell className="font-medium">{submission.studentName}</TableCell>
-                  <TableCell>{submission.studentId}</TableCell>
-                  <TableCell>{formatTimestamp(submission.submittedAt)}</TableCell>
-                  <TableCell>
-                    {submission.status === "pending" ? (
-                      <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
-                    ) : (
-                      <Badge className="bg-green-100 text-green-800">Graded</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {submission.grade ? (
-                      <span className="font-medium text-green-600">{submission.grade}/10</span>
-                    ) : (
-                      <span className="text-gray-400">Not graded</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-1" />
-                        View PDF
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </Button>
-                      <Button size="sm" onClick={() => openGradeDialog(submission)}>
-                        {submission.status === "pending" ? "Grade" : "Edit Grade"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAiAnalysis(submission)}
-                        disabled={isAiAnalyzing}
-                      >
-                        <Bot className="h-4 w-4 mr-1" />
-                        {isAiAnalyzing ? "Analyzing..." : "Check AI"}
-                      </Button>
-                    </div>
-                  </TableCell>
+      {selectedAssignment && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{selectedAssignment.title} - Submissions</CardTitle>
+            <CardDescription>Review and grade submissions for this assignment</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Student ID</TableHead>
+                  <TableHead>Submitted At</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {selectedAssignment?.submissions?.length ? (
+                  selectedAssignment.submissions.map((submission) => (
+                    <TableRow key={submission.id}>
+                      <TableCell className="font-medium">{submission.studentName}</TableCell>
+                      <TableCell>{submission.studentId}</TableCell>
+                      <TableCell>{formatTimestamp(submission.submittedAt)}</TableCell>
+                      <TableCell>
+                        {submission.status === "pending" ? (
+                          <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
+                        ) : (
+                          <Badge className="bg-green-100 text-green-800">Graded</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {submission.grade !== null ? (
+                          <span className="font-medium text-green-600">{submission.grade}/10</span>
+                        ) : (
+                          <span className="text-gray-400">Not graded</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-1" />
+                            View PDF
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                          <Button size="sm" onClick={() => openGradeDialog(submission)}>
+                            {submission.status === "pending" ? "Grade" : "Edit Grade"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAiAnalysis(submission)}
+                            disabled={isAiAnalyzing}
+                          >
+                            <Bot className="h-4 w-4 mr-1" />
+                            {isAiAnalyzing ? "Analyzing..." : "Check AI"}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-gray-500">
+                      No submissions found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
 
-      {/* AI Analysis Results */}
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       {aiAnalysis && (
         <Card className="border-blue-200 bg-blue-50">
           <CardHeader>
@@ -238,12 +239,13 @@ export default function TeacherSubmissions() {
         </Card>
       )}
 
-      {/* Grade Submission Dialog */}
       <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Grade Submission</DialogTitle>
-            <DialogDescription>Grade submission by {selectedSubmission?.studentName}</DialogDescription>
+            <DialogDescription>
+              Grade submission by {selectedSubmission?.studentName}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -283,3 +285,4 @@ export default function TeacherSubmissions() {
     </div>
   )
 }
+
