@@ -8,14 +8,15 @@ const createAssignment = async (req, res) => {
   }
 
   try {
-    const assignment = new Assignment({
+    const assignment = await Assignment.create({
       title,
       description,
-      deadline,
+      deadline: new Date(deadline),
       branch,
       year,
-      submissions: 0,
-      totalStudents: Math.floor(Math.random() * 20) + 20, // Mock for now
+      // submissionCount will default to 0
+      // submissions will default to empty array
+      // totalStudents will use the random default
     });
 
     await assignment.save();

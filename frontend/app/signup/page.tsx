@@ -28,9 +28,9 @@ export default function SignupPage() {
   const router = useRouter()
   const { toast } = useToast()
 
-  const branches = ["Computer Science", "Information Technology", "Electronics", "Mechanical", "Civil", "Electrical"]
+  const branches = ["cse", "it", "electronics", "mechanical", "civil", "electrical"]
 
-  const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
+  const years = ["1", "2", "3", "4"]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
