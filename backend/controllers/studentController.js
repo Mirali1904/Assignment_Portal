@@ -2,6 +2,31 @@ const Assignment = require('../models/Assignment');
 const User = require('../models/User');
 const Submission = require('../models/Submission');
 
+const multer = require("multer");
+const path = require("path");
+
+// Set storage engine
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/"); // make sure this folder exists
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// File filter to accept only PDFs
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype === "application/pdf") cb(null, true);
+  else cb(new Error("Only PDFs are allowed"), false);
+};
+
+const upload = multer({ storage, fileFilter });
+exports.uploadMiddleware = upload.single("assignmentPdf");
+
+
+
 exports.getStudentDashboard = async (req, res) => {
     try {
         const userEmail = req.query.email;
@@ -114,4 +139,52 @@ exports.getStudentAssignments = async (req, res) => {
     } catch (err) {
         res.status(400).json({ status: 'fail', message: err.message });
     }
+};
+
+exports.submitAssignment = async (req, res) => {
+  try {
+    const { assignmentId, email } = req.body;
+
+    if (!assignmentId || !email) {
+      return res.status(400).json({ message: "Assignment ID and email required" });
+    }
+
+    const student = await User.findOne({ email });
+    if (!student) return res.status(404).json({ message: "Student not found" });
+
+    if (!req.file) return res.status(400).json({ message: "PDF file is required" });
+
+    // Check if already submitted
+    const existingSubmission = await Submission.findOne({
+      student: student._id,
+      assignment: assignmentId
+    });
+
+    if (existingSubmission) {
+      return res.status(400).json({ message: "Assignment already submitted" });
+    }
+
+    const submission = new Submission({
+      assignment: assignmentId,
+      student: student._id,
+      fileUrl: `/uploads/${req.file.filename}`, // frontend can access this URL
+      status: "submitted",
+    });
+
+    await submission.save();
+
+    // Optional: update submissionCount in assignment
+    await Assignment.findByIdAndUpdate(assignmentId, {
+      $inc: { submissionCount: 1 },
+      $push: { submissions: submission._id }
+    });
+
+    res.status(201).json({
+      status: "success",
+      message: "Assignment submitted successfully",
+      data: submission
+    });
+  } catch (err) {
+    res.status(500).json({ status: "fail", message: err.message });
+  }
 };
