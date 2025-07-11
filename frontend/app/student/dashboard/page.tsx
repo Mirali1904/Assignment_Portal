@@ -7,49 +7,67 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { FileText, Upload, Clock, CheckCircle, AlertCircle } from "lucide-react"
 
-// Mock data
-const mockAssignments = [
-  {
-    id: 1,
-    title: "Data Structures Assignment",
-    description: "Implement binary search tree with all operations",
-    deadline: "2024-01-15",
-    status: "submitted",
-    grade: 8.5,
-  },
-  {
-    id: 2,
-    title: "Web Development Project",
-    description: "Create a responsive website using React",
-    deadline: "2024-01-20",
-    status: "pending",
-    grade: null,
-  },
-  {
-    id: 3,
-    title: "Database Design",
-    description: "Design and implement a library management system",
-    deadline: "2024-01-25",
-    status: "not_submitted",
-    grade: null,
-  },
-  {
-    id: 4,
-    title: "Machine Learning Model",
-    description: "Build a classification model for iris dataset",
-    deadline: "2024-01-30",
-    status: "graded",
-    grade: 9.0,
-  },
-]
+interface Assignment {
+  id: string;
+  title: string;
+  description: string;
+  deadline: string;
+  status: "submitted" | "graded" | "pending" | "not_submitted";
+  grade: number | null;
+}
+
+interface DashboardData {
+  user: {
+    name: string;
+    email: string;
+  };
+  stats: {
+    totalAssignments: number;
+    completedAssignments: number;
+    averageGrade: number;
+  };
+  recentAssignments: Assignment[];
+}
+
 
 export default function StudentDashboard() {
-  const [assignments] = useState(mockAssignments)
-  const [userName, setUserName] = useState("")
 
+  const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [userName, setUserName] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
   useEffect(() => {
-    setUserName(localStorage.getItem("userName") || "Student")
-  }, [])
+  const fetchData = async () => {
+    try {
+      const email = localStorage.getItem("userEmail");
+
+      if (!email) throw new Error("User not logged in");
+
+      // Fetch student dashboard data
+      const userResponse = await fetch(`http://localhost:5000/api/student/dashboard?email=${email}`);
+      if (!userResponse.ok) throw new Error("Failed to fetch user data");
+      const userData = await userResponse.json();
+      setUserName(userData.data.user.name);
+
+      // Fetch assignments data
+      const assignmentsResponse = await fetch(`http://localhost:5000/api/student/assignments?email=${email}`);
+      if (!assignmentsResponse.ok) throw new Error("Failed to fetch assignments");
+      const assignmentsData = await assignmentsResponse.json();
+      setAssignments(assignmentsData.data);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
+
+
+
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -81,9 +99,17 @@ export default function StudentDashboard() {
     }
   }
 
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>
+  }
+
+  if (error) {
+    return <div className="flex justify-center items-center h-screen text-red-500">{error}</div>
+  }
+
   const completedAssignments = assignments.filter((a) => a.status === "graded" || a.status === "submitted").length
   const totalAssignments = assignments.length
-  const completionPercentage = (completedAssignments / totalAssignments) * 100
+  const completionPercentage = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0
 
   return (
     <div className="space-y-6">
@@ -136,7 +162,7 @@ export default function StudentDashboard() {
             <div className="text-2xl font-bold text-blue-600">
               {(
                 assignments.filter((a) => a.grade).reduce((sum, a) => sum + (a.grade || 0), 0) /
-                  assignments.filter((a) => a.grade).length || 0
+                assignments.filter((a) => a.grade).length || 0
               ).toFixed(1)}
             </div>
           </CardContent>

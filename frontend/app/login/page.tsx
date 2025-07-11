@@ -38,6 +38,7 @@ export default function LoginPage() {
       localStorage.setItem("userRole", data.role);
       localStorage.setItem("userEmail", email);
       localStorage.setItem("userName", data.name);
+      
 
       toast({
         title: "Login successful",
