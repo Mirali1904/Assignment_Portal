@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { GraduationCap, Mail, Lock } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/hooks/use-toast"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -20,49 +20,49 @@ export default function LoginPage() {
   const { toast } = useToast()
 
   const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
+    e.preventDefault();
+    setIsLoading(true);
 
-  try {
-    const res = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      localStorage.setItem("userRole", data.role);
-      localStorage.setItem("userEmail", email);
-      localStorage.setItem("userName", data.name);
-      
-
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      router.push(`/${data.role}/dashboard`);
-    } else {
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("userRole", data.role);
+        localStorage.setItem("userEmail", email);
+        localStorage.setItem("userName", data.name);
+
+
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+
+        router.push(`/${data.role}/dashboard`);
+      } else {
+        toast({
+          title: "Login failed",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Login failed",
-        description: data.message,
+        title: "Error",
+        description: "Something went wrong. Try again.",
         variant: "destructive",
       });
     }
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Something went wrong. Try again.",
-      variant: "destructive",
-    });
-  }
 
-  setIsLoading(false);
-};
+    setIsLoading(false);
+  };
 
 
   return (

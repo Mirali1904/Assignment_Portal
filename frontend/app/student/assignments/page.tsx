@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FileText, Upload, Clock, CheckCircle, AlertCircle, Calendar } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/hooks/use-toast"
 
 export default function StudentAssignments() {
   const [assignments, setAssignments] = useState([] as any[])
@@ -169,8 +169,8 @@ export default function StudentAssignments() {
                 isOverdue
                   ? "border-red-200 bg-red-50"
                   : isDueSoon
-                  ? "border-yellow-200 bg-yellow-50"
-                  : ""
+                    ? "border-yellow-200 bg-yellow-50"
+                    : ""
               }
             >
               <CardHeader>
@@ -217,7 +217,7 @@ export default function StudentAssignments() {
                       </div>
                     )}
 
-                    {assignment.status === "not_submitted" && (
+                    {assignment.status === "" && (
                       <Button onClick={() => openSubmitDialog(assignment)}>
                         <Upload className="h-4 w-4 mr-2" />
                         Submit

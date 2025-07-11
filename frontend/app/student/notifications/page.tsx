@@ -1,62 +1,39 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Bell, FileText, CheckCircle, Clock, Trash2 } from "lucide-react"
 
-// Mock notifications data
-const mockNotifications = [
-  {
-    id: 1,
-    type: "new_assignment",
-    title: "New Assignment Posted",
-    message: "Dr. Smith has posted a new assignment: 'Advanced Algorithms'",
-    timestamp: "2024-01-10T10:30:00Z",
-    read: false,
-    assignment: "Advanced Algorithms",
-  },
-  {
-    id: 2,
-    type: "grade_received",
-    title: "Assignment Graded",
-    message: "Your submission for 'Data Structures Assignment' has been graded. Grade: 8.5/10",
-    timestamp: "2024-01-09T14:15:00Z",
-    read: false,
-    grade: 8.5,
-  },
-  {
-    id: 3,
-    type: "deadline_reminder",
-    title: "Assignment Due Soon",
-    message: "Reminder: 'Web Development Project' is due in 2 days",
-    timestamp: "2024-01-08T09:00:00Z",
-    read: true,
-    assignment: "Web Development Project",
-  },
-  {
-    id: 4,
-    type: "feedback_available",
-    title: "Feedback Available",
-    message: "Prof. Johnson has provided feedback on your 'Database Design' submission",
-    timestamp: "2024-01-07T16:45:00Z",
-    read: true,
-    assignment: "Database Design",
-  },
-  {
-    id: 5,
-    type: "new_assignment",
-    title: "New Assignment Posted",
-    message: "Prof. Davis has posted a new assignment: 'Machine Learning Project'",
-    timestamp: "2024-01-06T11:20:00Z",
-    read: true,
-    assignment: "Machine Learning Project",
-  },
-]
+type Notification = {
+  _id: string
+  type: "new_assignment" | "grade_received" | "deadline_reminder" | "feedback_available"
+  title?: string
+  message: string
+  read: boolean
+  createdAt: string
+  assignment?: string
+}
+
+
+
 
 export default function StudentNotifications() {
-  const [notifications, setNotifications] = useState(mockNotifications)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const email = localStorage.getItem("userEmail")
+      const res = await fetch(`http://localhost:5000/api/notifications?email=${email}`)
+      const data = await res.json()
+      if (res.ok) setNotifications(data.data)
+      else console.error(data.message)
+      console.log("Fetched notifications:", data.data);
+    }
+
+    fetchNotifications()
+  }, [])
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -103,17 +80,43 @@ export default function StudentNotifications() {
     }
   }
 
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map((notif) => (notif.id === id ? { ...notif, read: true } : notif)))
+  const markAsRead = async (id: string) => {
+    await fetch(`http://localhost:5000/api/notifications/${id}/mark-read`, {
+      method: "PATCH",
+    })
+    setNotifications((prev) =>
+      prev.map((n) => (n._id === id ? { ...n, read: true } : n))
+    )
   }
 
-  const deleteNotification = (id: number) => {
-    setNotifications(notifications.filter((notif) => notif.id !== id))
-  }
+  const deleteNotification = async (id: string) => {
+    await fetch(`http://localhost:5000/api/notifications/${id}`, {
+      method: "DELETE",
+    });
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map((notif) => ({ ...notif, read: true })))
-  }
+    setNotifications((prev) => prev.filter((notif) => notif._id !== id));
+  };
+
+
+  const markAllAsRead = async () => {
+    try {
+      const email = localStorage.getItem("userEmail")
+      await fetch(`http://localhost:5000/api/notifications/mark-all-read?email=${email}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
+
+
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, status: "read" }))
+      );
+    } catch (err) {
+      console.error("Failed to mark all as read:", err);
+    }
+  };
+
 
   const unreadCount = notifications.filter((notif) => !notif.read).length
 
@@ -125,7 +128,9 @@ export default function StudentNotifications() {
           <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
           <p className="text-gray-600">
             Stay updated with your assignments and grades
-            {unreadCount > 0 && <Badge className="ml-2 bg-red-100 text-red-800">{unreadCount} unread</Badge>}
+            {unreadCount > 0 && (
+              <Badge className="ml-2 bg-red-100 text-red-800">{unreadCount} unread</Badge>
+            )}
           </p>
         </div>
 
@@ -149,7 +154,7 @@ export default function StudentNotifications() {
         ) : (
           notifications.map((notification) => (
             <Card
-              key={notification.id}
+              key={notification._id}
               className={`${!notification.read ? "border-blue-200 bg-blue-50" : ""} hover:shadow-md transition-shadow`}
             >
               <CardHeader className="pb-3">
@@ -158,7 +163,7 @@ export default function StudentNotifications() {
                     {getNotificationIcon(notification.type)}
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <CardTitle className="text-base">{notification.title}</CardTitle>
+                        <CardTitle className="text-base">{notification.message}</CardTitle>
                         {!notification.read && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}
                       </div>
                       {getNotificationBadge(notification.type)}
@@ -166,12 +171,14 @@ export default function StudentNotifications() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">{formatTimestamp(notification.timestamp)}</span>
+                    <span className="text-sm text-gray-500">
+                      {formatTimestamp(notification.createdAt)}
+                    </span>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => deleteNotification(notification.id)}
+                      onClick={() => deleteNotification(notification._id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -180,20 +187,19 @@ export default function StudentNotifications() {
               </CardHeader>
 
               <CardContent className="pt-0">
-                <p className="text-gray-700 mb-3">{notification.message}</p>
+                
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     {notification.assignment && (
-                      <span className="text-sm text-gray-600">Assignment: {notification.assignment}</span>
+                      <span className="text-sm text-gray-600">
+                      </span>
                     )}
-                    {notification.grade && (
-                      <span className="text-sm font-medium text-green-600">Grade: {notification.grade}/10</span>
-                    )}
+
                   </div>
 
                   {!notification.read && (
-                    <Button variant="outline" size="sm" onClick={() => markAsRead(notification.id)}>
+                    <Button variant="outline" size="sm" onClick={() => markAsRead(notification._id)}>
                       Mark as Read
                     </Button>
                   )}

@@ -1,64 +1,41 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, FileText, Users, Clock, CheckCircle } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select"
+import {
+  Plus, FileText, Users, Clock, CheckCircle,
+} from "lucide-react"
+import { useToast } from "@/components/hooks/use-toast"
 import Link from "next/link"
+import router from "next/router"
 
-// Mock data
-const mockAssignments = [
-  {
-    id: 1,
-    title: "Data Structures Assignment",
-    description: "Implement binary search tree with all operations",
-    deadline: "2024-01-15",
-    branch: "Computer Science",
-    year: "2nd Year",
-    submissions: 25,
-    totalStudents: 30,
-  },
-  {
-    id: 2,
-    title: "Web Development Project",
-    description: "Create a responsive website using React",
-    deadline: "2024-01-20",
-    branch: "Information Technology",
-    year: "3rd Year",
-    submissions: 18,
-    totalStudents: 28,
-  },
-  {
-    id: 3,
-    title: "Database Design",
-    description: "Design and implement a library management system",
-    deadline: "2024-01-25",
-    branch: "Computer Science",
-    year: "3rd Year",
-    submissions: 12,
-    totalStudents: 32,
-  },
-]
+// Initial mock (optional fallback)
+const mockAssignments: any[] = []
 
 export default function TeacherDashboard() {
   const [assignments, setAssignments] = useState(mockAssignments)
   const [userName, setUserName] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [stats, setStats] = useState({
+    totalSubmissions: 0,
+    pendingReviews: 0,
+    completedReviews: 0,
+  });
+
   const [newAssignment, setNewAssignment] = useState({
     title: "",
     description: "",
@@ -68,65 +45,60 @@ export default function TeacherDashboard() {
   })
   const { toast } = useToast()
 
+  const branches = ["cse", "it", "Electronics", "Mechanical", "Civil", "Electrical"]
+  const years = ["1", "2", "3", "4"]
+
   useEffect(() => {
-    setUserName(localStorage.getItem("userName") || "Teacher");
+    setUserName(localStorage.getItem("userName") || "Teacher")
 
     const fetchAssignments = async () => {
-      const res = await fetch("http://localhost:5000/api/assignments");
-      const data = await res.json();
-      setAssignments(data);
-    };
+      const res = await fetch("http://localhost:5000/api/assignments")
+      const data = await res.json()
 
-    fetchAssignments();
-  }, []);
+      setAssignments(data.assignments)
+      setStats(data.stats)
+    }
 
-
-  const branches = ["Computer Science", "Information Technology", "Electronics", "Mechanical", "Civil", "Electrical"]
-
-  const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
+    fetchAssignments()
+  }, [])
 
   const handleCreateAssignment = async () => {
-    const { title, description, deadline, branch, year } = newAssignment;
+    const { title, description, deadline, branch, year } = newAssignment
 
-    if (!title || !description || !deadline || !branch || !year) return;
+    if (!title || !description || !deadline || !branch || !year) return
 
     try {
       const res = await fetch("http://localhost:5000/api/assignments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newAssignment),
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (res.ok) {
-        setAssignments([...assignments, data.assignment]);
+        setAssignments(prev => [...prev, data.assignment])
         toast({
           title: "Assignment created",
           description: "Your assignment has been posted successfully.",
-        });
-        setNewAssignment({ title: "", description: "", deadline: "", branch: "", year: "" });
-        setIsCreateDialogOpen(false);
+        })
+        setNewAssignment({ title: "", description: "", deadline: "", branch: "", year: "" })
+        setIsCreateDialogOpen(false)
       } else {
         toast({
           title: "Error",
           description: data.message,
           variant: "destructive",
-        });
+        })
       }
     } catch (err) {
       toast({
         title: "Error",
         description: "Server error. Please try again later.",
         variant: "destructive",
-      });
+      })
     }
-  };
-
-
-  const totalAssignments = assignments.length
-  const totalSubmissions = assignments.reduce((sum, a) => sum + a.submissions, 0)
-  const pendingReviews = assignments.reduce((sum, a) => sum + a.submissions, 0) // Mock pending reviews
+  }
 
   return (
     <div className="space-y-6">
@@ -231,7 +203,7 @@ export default function TeacherDashboard() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalAssignments}</div>
+            <div className="text-2xl font-bold">{stats.totalSubmissions}</div>
           </CardContent>
         </Card>
 
@@ -241,7 +213,7 @@ export default function TeacherDashboard() {
             <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{totalSubmissions}</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.totalSubmissions}</div>
           </CardContent>
         </Card>
 
@@ -251,7 +223,7 @@ export default function TeacherDashboard() {
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{pendingReviews}</div>
+            <div className="text-2xl font-bold text-yellow-600">{stats.pendingReviews}</div>
           </CardContent>
         </Card>
 
@@ -261,9 +233,7 @@ export default function TeacherDashboard() {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {Math.floor(totalSubmissions * 0.7)} {/* Mock completed reviews */}
-            </div>
+            <div className="text-2xl font-bold text-green-600">{stats.completedReviews}</div>
           </CardContent>
         </Card>
       </div>
@@ -277,7 +247,7 @@ export default function TeacherDashboard() {
         <CardContent>
           <div className="space-y-4">
             {assignments.map((assignment) => (
-              <div key={assignment.id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div key={assignment.id || assignment._id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex-1">
                   <h3 className="font-medium">{assignment.title}</h3>
                   <p className="text-sm text-gray-600">{assignment.description}</p>
@@ -290,12 +260,12 @@ export default function TeacherDashboard() {
                 <div className="flex items-center gap-4">
                   <div className="text-center">
                     <div className="font-medium">
-                      {assignment.submissions}/{assignment.totalStudents}
+                      {stats.totalSubmissions}
                     </div>
                     <div className="text-xs text-gray-500">Submissions</div>
                   </div>
                   <Link href="/teacher/submissions">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => router.push("/teacher/submissions")}>
                       View Submissions
                     </Button>
                   </Link>

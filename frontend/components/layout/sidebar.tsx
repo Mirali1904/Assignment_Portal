@@ -34,7 +34,6 @@ export function Sidebar({ role }: SidebarProps) {
   const studentNavItems = [
     { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/student/assignments", label: "Assignments", icon: FileText },
-    { href: "/student/submissions", label: "Submissions", icon: Upload },
     { href: "/student/notifications", label: "Notifications", icon: Bell },
     { href: "/student/profile", label: "Profile", icon: User },
   ]

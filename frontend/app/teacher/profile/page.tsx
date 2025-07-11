@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { User, Mail, BookOpen, Calendar, Award, Edit, FileText } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/hooks/use-toast"
 
 export default function TeacherProfile() {
   const [isEditing, setIsEditing] = useState(false)

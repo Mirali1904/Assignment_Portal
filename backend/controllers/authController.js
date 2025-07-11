@@ -57,11 +57,11 @@ const loginUser = async (req, res) => {
     }
 
     // You can generate JWT here if needed, for now we just return user role
-    res.status(200).json({
-      message: "Login successful",
-      role: user.role,
-      name: user.name,
-    });
+      res.status(200).json({
+        message: "Login successful",
+        role: user.role,
+        name: user.name,
+      });
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ message: "Server error" });

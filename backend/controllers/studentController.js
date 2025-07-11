@@ -52,7 +52,7 @@ exports.getStudentDashboard = async (req, res) => {
 
         const totalAssignments = assignments.length;
         const completedAssignments = submissions.filter(s =>
-            s.status === 'graded' || s.status === 'submitted'
+            s.status === 'graded' || s.status === 'pending'
         ).length;
 
         const averageGrade =
@@ -120,13 +120,14 @@ exports.getStudentAssignments = async (req, res) => {
             const submission = submissions.find(sub =>
                 sub.assignment._id.equals(assignment._id)
             );
-
+    
+            
             return {
                 id: assignment._id,
                 title: assignment.title,
                 description: assignment.description,
                 deadline: assignment.deadline,
-                status: submission?.status || 'not_submitted',
+                status: submission?.status || 'pending',
                 grade: submission?.grade || null
             };
         });
@@ -154,7 +155,6 @@ exports.submitAssignment = async (req, res) => {
 
     if (!req.file) return res.status(400).json({ message: "PDF file is required" });
 
-    // Check if already submitted
     const existingSubmission = await Submission.findOne({
       student: student._id,
       assignment: assignmentId
@@ -168,7 +168,7 @@ exports.submitAssignment = async (req, res) => {
       assignment: assignmentId,
       student: student._id,
       fileUrl: `/uploads/${req.file.filename}`, // frontend can access this URL
-      status: "submitted",
+      status: "pending",
     });
 
     await submission.save();

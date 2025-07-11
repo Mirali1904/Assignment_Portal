@@ -18,8 +18,8 @@ const submissionSchema = new mongoose.Schema({
   fileUrl: String,
   status: { 
     type: String, 
-    enum: ['submitted', 'graded', 'pending'],
-    default: 'submitted' 
+    enum: ['graded', 'submitted'],
+    default: '' 
   },
   grade: { 
     type: Number, 
