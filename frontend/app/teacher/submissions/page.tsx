@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Eye, Bot, Download } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/hooks/use-toast"
 
 // ✅ TYPES
 type Submission = {
@@ -203,7 +203,7 @@ export default function TeacherSubmissions() {
                         )}
                       </TableCell>
                       <TableCell>
-                        
+
                         <div className="flex gap-2">
                           <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer">
                             <Button variant="outline" size="sm">
