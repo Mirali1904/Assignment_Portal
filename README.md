@@ -22,17 +22,17 @@ A full-stack web application for managing college assignments. This portal allow
 
 ## 📸 Screenshots
 
-![singup](./screenshots/singup.png)
-![login](./screenshots/login.png)
-![teacher_dashboard](./screenshots/teacherdb.png)
-![create_Assignments](./screenshots/create_assignment.png)
-![created_Assignments](./screenshots/created_assignments.png)
-![check_submission](./screenshots/chech_submission.png)
-![Ai_detection](./screenshots/Ai_detection.png)
-![Student_Dashboard](./screenshots/student_dashboard.png)
-![Student_assignments](./screenshots/student_assignments.png)
-![Student_notification](./screenshots/student-dashboard.png)
-![profile](./screenshots/profile.png)
+![singup](./screenshorts/signup.png)
+![login](./screenshorts/login.png)
+![teacher_dashboard](./screenshorts/teacherdb.png)
+![create_Assignments](./screenshorts/create_assignment.png)
+![created_Assignments](./screenshorts/created_assignments.png)
+![check_submission](./screenshorts/chech_submission.png)
+![Ai_detection](./screenshorts/Ai_detection.png)
+![Student_Dashboard](./screenshorts/student_dashboard.png)
+![Student_assignments](./screenshorts/student_assignments.png)
+![Student_notification](./screenshorts/student-dashboard.png)
+![profile](./screenshorts/profile.png)
 
 
 
